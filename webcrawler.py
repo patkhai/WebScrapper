@@ -1,5 +1,6 @@
 import requests
 import argparse
+import concurrent.futures
 from urllib.error import URLError, HTTPError
 from urllib.request import urlparse, urljoin
 from bs4 import BeautifulSoup
@@ -32,8 +33,10 @@ def searchURL(url):
     urls = set()
     mainURL = urlparse(url).netloc
     soup = BeautifulSoup(requests.get(url).content, "html.parser")
+    
+    print(url)
 
-    for href in soup.findAll("a", limit =30):
+    for href in soup.findAll("a"):
         link = href.attrs.get("href")
 
         if link == "" or link is None:
@@ -53,11 +56,10 @@ def searchURL(url):
                 print(link)
                 outboundLink.add(link)
             continue
-        print(link)
+        print(f"\t{link}")
         urls.add(link)
         inboundLink.add(link)
     return urls
-
 
 def listURL(url):
     """
@@ -66,6 +68,11 @@ def listURL(url):
     for links in searchURL(url):
         return listURL(links)
 
+def downloadURL(url): 
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor: 
+        executor.submit(listURL,url, 60)
+
+        
 def main(): 
     parser = argparse.ArgumentParser(description="Python Web Crawler")
     parser.add_argument("url", help="Put the url to be crawled")
